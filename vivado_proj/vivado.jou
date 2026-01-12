@@ -1,0 +1,131 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Sun Jan 11 16:29:55 2026
+# Process ID         : 17984
+# Current directory  : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj
+# Command line       : vivado.exe -gui_launcher_event rodinguilauncherevent11376 C:\Users\wands\Documents\Build18\Cora-Z7-07S-Pmod-I2S2-2018.2-1\vivado_proj\Pmod-I2S2-Cora-Z7-07S.xpr
+# Log file           : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/vivado.log
+# Journal file       : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj\vivado.jou
+# Running On         : volatile_knight
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 13th Gen Intel(R) Core(TM) i7-1355U
+# CPU Frequency      : 2611 MHz
+# CPU Physical cores : 10
+# CPU Logical cores  : 12
+# Host memory        : 16876 MB
+# Swap memory        : 2617 MB
+# Total Virtual      : 19494 MB
+# Available Virtual  : 4088 MB
+#-----------------------------------------------------------
+start_guioopen_project C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.xpr
+update_compile_order -fileset sources_1reset_run synth_1
+add_files -norecurse C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/imports/hdl/mic_rx.v
+update_compile_order -fileset sources_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs synth_1 -jobs 6
+wait_on_run synth_1
+launch_runs impl_1 -jobs 6
+wait_on_run impl_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+open_hw_manager
+connect_hw_server -allow_non_jtag
+open_hw_target
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+current_hw_device [get_hw_devices xc7z007s_1]
+refresh_hw_device -update_hw_probes false [lindex [get_hw_devices xc7z007s_1] 0]
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]
+update_compile_order -fileset sources_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+open_run impl_1
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]
+update_compile_order -fileset sources_1
+update_compile_order -fileset sources_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs synth_1 -jobs 6
+wait_on_run synth_1
+reset_run synth_1
+launch_runs synth_1 -jobs 6
+wait_on_run synth_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs synth_1 -jobs 6
+wait_on_run synth_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs synth_1 -jobs 6
+wait_on_run synth_1
+launch_runs impl_1 -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+set_property PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7z007s_1]
+set_property PROGRAM.FILE {C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.runs/impl_1/top.bit} [get_hw_devices xc7z007s_1]
+program_hw_devices [get_hw_devices xc7z007s_1]
+refresh_hw_device [lindex [get_hw_devices xc7z007s_1] 0]

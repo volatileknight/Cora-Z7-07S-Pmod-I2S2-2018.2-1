@@ -1,0 +1,26 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
+| Date         : Fri Jan  9 17:43:33 2026
+| Host         : volatile_knight running 64-bit major release  (build 9200)
+| Command      : upgrade_project -migrate_output_products
+| Project_Path : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.xpr
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Project Status Summary
+
+1. Project IP Status
+--------------------
+This project contains 1 IP and 0 Block Designs.
+
+
+1.1 Project IP Instances
++-----------+-------------------------+-------------------------------------+-------------------------------------+
+| Instance  | Status                  | Reason                              | Recommendation                      |
+| Name      |                         |                                     |                                     |
++-----------+-------------------------+-------------------------------------+-------------------------------------+
+| clk_wiz_0 | Will be Migrated.       |                                     |                                     |
++-----------+-------------------------+-------------------------------------+-------------------------------------+
+
+
+

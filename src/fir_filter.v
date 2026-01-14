@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
-
+/* 
+Follows AXI-Stream interface conventions. That is all the master and slave signals
+*/
 module FIR
 #(
     parameter INPUT_WIDTH = 24,
@@ -11,22 +13,24 @@ module FIR
     (
     input clk,
     input reset_n,
+    input [NUM_TAPS][COEFF_WIDTH-1:0] coeffs, // FIR coefficients
     input signed [INPUT_WIDTH-1:0] s_axis_fir_tdata, 
     input [5:0] s_axis_fir_tkeep, // number of valid bytes: 48 / 8 = 6
-    input s_axis_fir_tlast,
-    input s_axis_fir_tvalid,
-    input m_axis_fir_tready,
-    output reg m_axis_fir_tvalid,
-    output reg s_axis_fir_tready,
-    output reg m_axis_fir_tlast,
-    output reg [5:0] m_axis_fir_tkeep,
+    input s_axis_fir_tlast, // end of frame signal from upstream module
+    input s_axis_fir_tvalid, // indicates valid data from upstream module
+    input m_axis_fir_tready, // indicates downstream module is ready to accept data
+    output reg m_axis_fir_tvalid, // indicates valid data to downstream module
+    output reg s_axis_fir_tready, // indicates ready to accept data from upstream module
+    output reg m_axis_fir_tlast, // end of frame signal to downstream module
+    output reg [5:0] m_axis_fir_tkeep, // number of valid bytes: 48 / 8 = 6
     output reg signed [OUTPUT_WIDTH-1:0] m_axis_fir_tdata
     );
 
     
     always @ (posedge clk)
         begin
-            m_axis_fir_tkeep <= '1; // all bytes are valid
+            m_axis_fir_tkeep <= s_axis_fir_tkeep; // pass through tkeep from input to output
+            // m_axis_fir_tkeep <= '1; // all bytes are valid
         end
         
     always @ (posedge clk)
@@ -43,7 +47,7 @@ module FIR
     
     // 15-tap FIR 
     reg enable_fir, enable_buff;
-    reg [3:0] buff_cnt;
+    reg [NUM_TAPS-1:0] buff_cnt; // definitely more than enough bits to count to number of taps
     reg signed [INPUT_WIDTH-1:0] in_sample; 
     reg signed [INPUT_WIDTH-1:0] buff0, buff1, buff2, buff3, buff4, buff5, buff6, buff7, buff8, buff9, buff10, buff11, buff12, buff13, buff14; 
     wire signed [COEFF_WIDTH-1:0] tap0, tap1, tap2, tap3, tap4, tap5, tap6, tap7, tap8, tap9, tap10, tap11, tap12, tap13, tap14; 
@@ -66,6 +70,21 @@ module FIR
     // assign tap12 = 16'h05A5; // 0.0441 * 32768 = 1445.0688 = 1445 = 0x05A5
     // assign tap13 = 16'h0000; // 0
     // assign tap14 = 16'hFC9C; // twos(-0.0265 * 32768) = 0xFC9C
+    assign tap0 = coeffs[0];
+    assign tap1 = coeffs[1];
+    assign tap2 = coeffs[2];
+    assign tap3 = coeffs[3];
+    assign tap4 = coeffs[4];
+    assign tap5 = coeffs[5];
+    assign tap6 = coeffs[6];
+    assign tap7 = coeffs[7];
+    assign tap8 = coeffs[8];
+    assign tap9 = coeffs[9];
+    assign tap10 = coeffs[10];
+    assign tap11 = coeffs[11];
+    assign tap12 = coeffs[12];
+    assign tap13 = coeffs[13];
+    assign tap14 = coeffs[14];
     
     /* This loop sets the tvalid flag on the output of the FIR high once 
      * the circular buffer has been filled with input samples for the 
@@ -82,10 +101,10 @@ module FIR
             else if (m_axis_fir_tready == 1'b0 || s_axis_fir_tvalid == 1'b0)
                 begin
                     enable_fir <= 1'b0;
-                    buff_cnt <= 4'd15;
+                    buff_cnt <= NUM_TAPS-1;
                     in_sample <= in_sample;
                 end
-            else if (buff_cnt == 4'd15)
+            else if (buff_cnt == NUM_TAPS-1) // i don't know if this makes it 15 or 16 taps
                 begin
                     buff_cnt <= 4'd0;
                     enable_fir <= 1'b1;

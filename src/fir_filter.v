@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-/* 
+/*
 Follows AXI-Stream interface conventions. That is all the master and slave signals
 */
 module FIR
@@ -7,14 +7,14 @@ module FIR
     parameter INPUT_WIDTH = 24,
     parameter COEFF_WIDTH = 24,
     parameter NUM_TAPS = 15,
-    localparam ACC_WIDTH = INPUT_WIDTH + COEFF_WIDTH // width of one multiply output
+    localparam ACC_WIDTH = INPUT_WIDTH + COEFF_WIDTH, // width of one multiply output
     localparam OUTPUT_WIDTH = ACC_WIDTH + $clog2(NUM_TAPS) // width of final accumulation output
 )
     (
     input clk,
     input reset_n,
     input [NUM_TAPS][COEFF_WIDTH-1:0] coeffs, // FIR coefficients
-    input signed [INPUT_WIDTH-1:0] s_axis_fir_tdata, 
+    input signed [INPUT_WIDTH-1:0] s_axis_fir_tdata,
     input [5:0] s_axis_fir_tkeep, // number of valid bytes: 48 / 8 = 6
     input s_axis_fir_tlast, // end of frame signal from upstream module
     input s_axis_fir_tvalid, // indicates valid data from upstream module
@@ -26,13 +26,13 @@ module FIR
     output reg signed [OUTPUT_WIDTH-1:0] m_axis_fir_tdata
     );
 
-    
+
     always @ (posedge clk)
         begin
             m_axis_fir_tkeep <= s_axis_fir_tkeep; // pass through tkeep from input to output
             // m_axis_fir_tkeep <= '1; // all bytes are valid
         end
-        
+
     always @ (posedge clk)
         begin
             if (s_axis_fir_tlast == 1'b1)
@@ -44,16 +44,16 @@ module FIR
                     m_axis_fir_tlast <= 1'b0;
                 end
         end
-    
-    // 15-tap FIR 
+
+    // 15-tap FIR
     reg enable_fir, enable_buff;
     reg [NUM_TAPS-1:0] buff_cnt; // definitely more than enough bits to count to number of taps
-    reg signed [INPUT_WIDTH-1:0] in_sample; 
-    reg signed [INPUT_WIDTH-1:0] buff0, buff1, buff2, buff3, buff4, buff5, buff6, buff7, buff8, buff9, buff10, buff11, buff12, buff13, buff14; 
-    wire signed [COEFF_WIDTH-1:0] tap0, tap1, tap2, tap3, tap4, tap5, tap6, tap7, tap8, tap9, tap10, tap11, tap12, tap13, tap14; 
-    reg signed [ACC_WIDTH-1:0] acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9, acc10, acc11, acc12, acc13, acc14; 
+    reg signed [INPUT_WIDTH-1:0] in_sample;
+    reg signed [INPUT_WIDTH-1:0] buff0, buff1, buff2, buff3, buff4, buff5, buff6, buff7, buff8, buff9, buff10, buff11, buff12, buff13, buff14;
+    wire signed [COEFF_WIDTH-1:0] tap0, tap1, tap2, tap3, tap4, tap5, tap6, tap7, tap8, tap9, tap10, tap11, tap12, tap13, tap14;
+    reg signed [ACC_WIDTH-1:0] acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9, acc10, acc11, acc12, acc13, acc14;
 
-    
+
     // /* Taps for LPF running @ 1MSps with a cutoff freq of 400kHz*/
     // assign tap0 = 16'hFC9C;  // twos(-0.0265 * 32768) = 0xFC9C
     // assign tap1 = 16'h0000;  // 0
@@ -85,9 +85,9 @@ module FIR
     assign tap12 = coeffs[12];
     assign tap13 = coeffs[13];
     assign tap14 = coeffs[14];
-    
-    /* This loop sets the tvalid flag on the output of the FIR high once 
-     * the circular buffer has been filled with input samples for the 
+
+    /* This loop sets the tvalid flag on the output of the FIR high once
+     * the circular buffer has been filled with input samples for the
      * first time after a reset condition. */
     always @ (posedge clk or negedge reset_n)
         begin
@@ -115,11 +115,11 @@ module FIR
                     buff_cnt <= buff_cnt + 1;
                     in_sample <= s_axis_fir_tdata;
                 end
-        end   
+        end
 
     always @ (posedge clk)
         begin
-            if(reset == 1'b0 || m_axis_fir_tready == 1'b0 || s_axis_fir_tvalid == 1'b0)
+            if(reset_n == 1'b0 || m_axis_fir_tready == 1'b0 || s_axis_fir_tvalid == 1'b0)
                 begin
                     s_axis_fir_tready <= 1'b0;
                     m_axis_fir_tvalid <= 1'b0;
@@ -132,49 +132,49 @@ module FIR
                     enable_buff <= 1'b1;
                 end
         end
-    
-    /* Circular buffer bring in a serial input sample stream that 
+
+    /* Circular buffer bring in a serial input sample stream that
      * creates an array of 15 input samples for the 15 taps of the filter. */
     always @ (posedge clk)
         begin
             if(enable_buff == 1'b1)
                 begin
                     buff0 <= in_sample;
-                    buff1 <= buff0;        
-                    buff2 <= buff1;         
-                    buff3 <= buff2;      
-                    buff4 <= buff3;      
-                    buff5 <= buff4;       
-                    buff6 <= buff5;    
-                    buff7 <= buff6;       
-                    buff8 <= buff7;       
-                    buff9 <= buff8;       
-                    buff10 <= buff9;        
-                    buff11 <= buff10;       
-                    buff12 <= buff11;       
-                    buff13 <= buff12;       
-                    buff14 <= buff13;    
+                    buff1 <= buff0;
+                    buff2 <= buff1;
+                    buff3 <= buff2;
+                    buff4 <= buff3;
+                    buff5 <= buff4;
+                    buff6 <= buff5;
+                    buff7 <= buff6;
+                    buff8 <= buff7;
+                    buff9 <= buff8;
+                    buff10 <= buff9;
+                    buff11 <= buff10;
+                    buff12 <= buff11;
+                    buff13 <= buff12;
+                    buff14 <= buff13;
                 end
             else
                 begin
                     buff0 <= buff0;
-                    buff1 <= buff1;        
-                    buff2 <= buff2;         
-                    buff3 <= buff3;      
-                    buff4 <= buff4;      
-                    buff5 <= buff5;       
-                    buff6 <= buff6;    
-                    buff7 <= buff7;       
-                    buff8 <= buff8;       
-                    buff9 <= buff9;       
-                    buff10 <= buff10;        
-                    buff11 <= buff11;       
-                    buff12 <= buff12;       
-                    buff13 <= buff13;       
+                    buff1 <= buff1;
+                    buff2 <= buff2;
+                    buff3 <= buff3;
+                    buff4 <= buff4;
+                    buff5 <= buff5;
+                    buff6 <= buff6;
+                    buff7 <= buff7;
+                    buff8 <= buff8;
+                    buff9 <= buff9;
+                    buff10 <= buff10;
+                    buff11 <= buff11;
+                    buff12 <= buff12;
+                    buff13 <= buff13;
                     buff14 <= buff14;
                 end
         end
-        
+
     /* Multiply stage of FIR */
     always @ (posedge clk)
         begin
@@ -196,17 +196,17 @@ module FIR
                     acc13 <= tap13 * buff13;
                     acc14 <= tap14 * buff14;
                 end
-        end    
-        
-     /* Accumulate stage of FIR */   
-    always @ (posedge clk) 
+        end
+
+     /* Accumulate stage of FIR */
+    always @ (posedge clk)
         begin
             if (enable_fir == 1'b1)
                 begin
                     m_axis_fir_tdata <= acc0 + acc1 + acc2 + acc3 + acc4 + acc5 + acc6 + acc7 + acc8 + acc9 + acc10 + acc11 + acc12 + acc13 + acc14;
                 end
-        end     
+        end
 
-    
-    
+
+
 endmodule

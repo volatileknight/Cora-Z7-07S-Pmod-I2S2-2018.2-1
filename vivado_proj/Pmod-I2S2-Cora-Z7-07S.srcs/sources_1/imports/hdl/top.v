@@ -36,7 +36,8 @@ module top #(
     // Microphone interface
     output wire lmem_bclk,
     output wire lmem_lrclk,
-    input wire lmem_data
+    input wire lmem_data,
+    input wire rmem_data
 );
     wire axis_clk;
 
@@ -94,7 +95,7 @@ module top #(
 	) m_vc (
         .clk(axis_clk),
         .sw(sw),
-        
+        .reset_n(~reset),
         .s_axis_data(axis_rx_data),
         .s_axis_valid(axis_rx_valid),
         .s_axis_ready(axis_rx_ready),
@@ -107,6 +108,7 @@ module top #(
 
         .lmem_data(lmem_data),
         .lmem_lrclk(lmem_lrclk),
-        .lmem_bclk(lmem_bclk)
+        .lmem_bclk(lmem_bclk),
+        .rmem_data(rmem_data)
     );
 endmodule

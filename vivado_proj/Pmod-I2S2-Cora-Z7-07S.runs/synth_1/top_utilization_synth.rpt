@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
-| Date         : Sun Jan 11 19:41:40 2026
+| Date         : Thu Jan 15 21:18:07 2026
 | Host         : volatile_knight running 64-bit major release  (build 9200)
 | Command      : report_utilization -file top_utilization_synth.rpt -pb top_utilization_synth.pb
 | Design       : top
@@ -34,8 +34,8 @@ Table of Contents
 | Slice LUTs*             |  246 |     0 |          0 |     14400 |  1.71 |
 |   LUT as Logic          |  246 |     0 |          0 |     14400 |  1.71 |
 |   LUT as Memory         |    0 |     0 |          0 |      6000 |  0.00 |
-| Slice Registers         |  218 |     0 |          0 |     28800 |  0.76 |
-|   Register as Flip Flop |  218 |     0 |          0 |     28800 |  0.76 |
+| Slice Registers         |  219 |     0 |          0 |     28800 |  0.76 |
+|   Register as Flip Flop |  219 |     0 |          0 |     28800 |  0.76 |
 |   Register as Latch     |    0 |     0 |          0 |     28800 |  0.00 |
 | F7 Muxes                |    0 |     0 |          0 |      8800 |  0.00 |
 | F8 Muxes                |    0 |     0 |          0 |      4400 |  0.00 |
@@ -62,7 +62,7 @@ Warning! For any ECO changes, please run place_design if there are unplaced inst
 | 0     |          Yes |           - |          Set |
 | 0     |          Yes |           - |        Reset |
 | 0     |          Yes |         Set |            - |
-| 218   |          Yes |       Reset |            - |
+| 219   |          Yes |       Reset |            - |
 +-------+--------------+-------------+--------------+
 
 
@@ -152,13 +152,13 @@ Warning! For any ECO changes, please run place_design if there are unplaced inst
 +----------+------+---------------------+
 | Ref Name | Used | Functional Category |
 +----------+------+---------------------+
-| FDRE     |  218 |        Flop & Latch |
-| LUT4     |  151 |                 LUT |
+| FDRE     |  219 |        Flop & Latch |
+| LUT5     |  107 |                 LUT |
 | LUT3     |   81 |                 LUT |
+| LUT4     |   55 |                 LUT |
 | LUT2     |   38 |                 LUT |
 | CARRY4   |   16 |          CarryLogic |
 | LUT6     |   15 |                 LUT |
-| LUT5     |   11 |                 LUT |
 | DSP48E1  |   10 |    Block Arithmetic |
 | OBUF     |    9 |                  IO |
 | LUT1     |    4 |                 LUT |

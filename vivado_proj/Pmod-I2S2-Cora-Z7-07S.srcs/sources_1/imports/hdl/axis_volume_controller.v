@@ -23,6 +23,7 @@ module axis_volume_controller #(
     parameter DATA_WIDTH = 24
 ) (
     input wire clk,
+    input wire reset_n,
     input wire [SWITCH_WIDTH-1:0] sw,
     
     //AXIS SLAVE INTERFACE
@@ -40,7 +41,8 @@ module axis_volume_controller #(
     // MIC INPUT
     input wire lmem_data,
     input wire lmem_lrclk,
-    input wire lmem_bclk
+    input wire lmem_bclk,
+    input wire rmem_data
 );
     localparam MULTIPLIER_WIDTH = 24;
     reg [MULTIPLIER_WIDTH+DATA_WIDTH-1:0] data [1:0];
@@ -60,10 +62,12 @@ module axis_volume_controller #(
     reg s_new_packet_r = 1'b0;
 
 
-    /************ MIC INPUT PROCESSING ************/
+    /************ MEM INPUT PROCESSING ************/
     //mem_lrclk falls, then on the posedge of mem_bclk, lmem_data is valid
     reg [23:0] shift_lmem_data = 24'd0; //shift lmem_data into this
     reg [23:0] axis_lmem_data = 24'd0; //register shift_lmem_data into this
+    reg [23:0] shift_rmem_data = 24'd0; //shift lmem_data into this
+    reg [23:0] axis_rmem_data = 24'd0; //register shift_rmem_data into this
     // counts from 0 to 63 for each sample, then resets on the next lrclk falling edge
     reg [6:0] lmem_data_count = 7'd0; 
     reg old_lmem_lrclk = 1'b0;
@@ -81,8 +85,45 @@ module axis_volume_controller #(
             shift_lmem_data <= (shift_lmem_data << 1) | lmem_data;
         else if (lmem_data_count == 7'd24)
             axis_lmem_data <= shift_lmem_data; //register the full sample
+
+        if (lmem_data_count < 7'd24)
+            shift_rmem_data <= (shift_rmem_data << 1) | rmem_data;
+        else if (lmem_data_count == 7'd24)
+            axis_rmem_data <= shift_rmem_data; //register the full sample
     end
 
+    wire dont_care;
+    wire [5:0] dont_care2;
+    wire signed [359:0] buff_array;
+    wire signed [359:0] coeffs;
+    wire [23:0] y_n;
+
+    /************ FIR, LMS INTEGRATION ************/
+    FIR fir (.clk(clk),
+            .reset_n(reset_n),
+            .s_axis_fir_tdata(axis_rmem_data),
+            .s_axis_fir_tkeep(6'b111111), // all bytes are valid since we're using 24-bit samples
+            .s_axis_fir_tlast(1'b0),
+            .m_axis_fir_tdata(y_n),
+            .m_axis_fir_tkeep(dont_care2),
+            .m_axis_fir_tlast(dont_care),
+            .buff_array(buff_array),
+            .coeffs(coeffs)
+    );
+
+    LMS lms (
+        .clk(clk),
+        .reset_n(reset_n),
+        .buff_array(buff_array),
+        .err(axis_lmem_data), // use left mic as error signal for testing
+        .wn_u(coeffs)
+     );
+
+
+    reg [SWITCH_WIDTH-1:0] vol;
+
+    always@(posedge clk)
+        vol <= 4'b0001;
     
     always@(posedge clk) begin
         sw_sync_r[2] <= sw_sync_r[1];
@@ -94,15 +135,19 @@ module axis_volume_controller #(
 //            multiplier <= {1'b1, {MULTIPLIER_WIDTH{1'b0}}};
 //        else
             // multiplier <= {1'b0, sw, {MULTIPLIER_WIDTH-SWITCH_WIDTH{1'b0}}} + 1;
-            multiplier <= {sw_sync,{MULTIPLIER_WIDTH{1'b0}}} / {SWITCH_WIDTH{1'b1}};
+            multiplier <= {vol,{MULTIPLIER_WIDTH{1'b0}}} / {SWITCH_WIDTH{1'b1}};
             
         s_new_packet_r <= s_new_packet;
     end
     
     always@(posedge clk)
         if (s_new_word == 1'b1) // sign extend and register AXIS slave data
-            data[s_select] <= {{MULTIPLIER_WIDTH{axis_lmem_data[DATA_WIDTH-1]}}, axis_lmem_data}; //to test the mic input
-            //data[s_select] <= {{MULTIPLIER_WIDTH{s_axis_data[DATA_WIDTH-1]}}, s_axis_data};
+            if (sw_sync == 4'b0001)
+                data[s_select] <= {{MULTIPLIER_WIDTH{axis_lmem_data[DATA_WIDTH-1]}}, axis_lmem_data}; //to test the mic input
+            else 
+                data[s_select] <= {{MULTIPLIER_WIDTH{y_n[DATA_WIDTH-1]}}, y_n}; //to test the mic input
+                //data[s_select] <= {{MULTIPLIER_WIDTH{axis_rmem_data[DATA_WIDTH-1]}}, axis_rmem_data}; //to test the mic input
+                //data[s_select] <= {{MULTIPLIER_WIDTH{s_axis_data[DATA_WIDTH-1]}}, s_axis_data}; //to test the AXIS input
         else if (s_new_packet_r == 1'b1) begin
             data[0] <= $signed(data[0]) * multiplier;
             data[1] <= $signed(data[1]) * multiplier;

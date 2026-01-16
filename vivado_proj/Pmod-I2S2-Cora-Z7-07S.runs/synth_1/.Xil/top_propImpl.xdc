@@ -27,3 +27,5 @@ set_property src_info {type:XDC file:1 line:89 export:INPUT save:INPUT read:READ
 set_property -dict { PACKAGE_PIN V13   IOSTANDARD LVCMOS33 } [get_ports { lmem_data }]; #IO_L3N_T0_DQS_34 Sch=ck_io[1]
 set_property src_info {type:XDC file:1 line:90 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN T14   IOSTANDARD LVCMOS33 } [get_ports { lmem_bclk }]; #IO_L5P_T0_34 Sch=ck_io[2]
+set_property src_info {type:XDC file:1 line:91 export:INPUT save:INPUT read:READ} [current_design]
+set_property -dict { PACKAGE_PIN T15   IOSTANDARD LVCMOS33 } [get_ports { rmem_data }]; #IO_L5N_T0_34 Sch=ck_io[3]

@@ -56,10 +56,13 @@ if {$::dispatch::connected} {
 }
 
 OPTRACE "synth_1" START { ROLLUP_AUTO }
+set_param checkpoint.writeSynthRtdsInDcp 1
 set_param general.usePosixSpawnForFork 1
 set_param chipscope.maxJobs 3
+set_param synth.incrementalSynthesisCache C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/.Xil/Vivado-16700-volatile_knight/incrSyn
 set_param xicom.use_bs_reader 1
-set_msg_config -id {Common 17-41} -limit 10000000
+set_msg_config -id {Synth 8-256} -limit 10000
+set_msg_config -id {Synth 8-638} -limit 10000
 OPTRACE "Creating in-memory project" START { }
 create_project -in_memory -part xc7z007sclg400-1
 
@@ -84,6 +87,8 @@ OPTRACE "Adding files" START { }
 read_verilog -library xil_defaultlib {
   C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/imports/hdl/axis_i2s2.v
   C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/imports/hdl/axis_volume_controller.v
+  C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/imports/hdl/fir_filter.v
+  C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/imports/hdl/lms.v
   C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/imports/hdl/top.v
 }
 read_ip -quiet C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci

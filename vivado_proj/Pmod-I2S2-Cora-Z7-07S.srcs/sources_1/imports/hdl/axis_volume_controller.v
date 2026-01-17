@@ -29,7 +29,7 @@ module axis_volume_controller #(
     //AXIS SLAVE INTERFACE
     input  wire [DATA_WIDTH-1:0] s_axis_data,
     input  wire s_axis_valid,
-    output reg  s_axis_ready = 1'b1,
+    output wire s_axis_ready,
     input  wire s_axis_last,
     
     // AXIS MASTER INTERFACE
@@ -56,10 +56,8 @@ module axis_volume_controller #(
     wire m_new_word = (m_axis_valid == 1'b1 && m_axis_ready == 1'b1) ? 1'b1 : 1'b0;
     wire m_new_packet = (m_new_word == 1'b1 && m_axis_last == 1'b1) ? 1'b1 : 1'b0;
     
-    wire s_select = s_axis_last;
-    wire s_new_word = (s_axis_valid == 1'b1 && s_axis_ready == 1'b1) ? 1'b1 : 1'b0;
-    wire s_new_packet = (s_new_word == 1'b1 && s_axis_last == 1'b1) ? 1'b1 : 1'b0;
     reg s_new_packet_r = 1'b0;
+    reg s_axis_ready_int = 1'b1;
 
 
     /************ MEM INPUT PROCESSING ************/
@@ -92,23 +90,62 @@ module axis_volume_controller #(
             axis_rmem_data <= shift_rmem_data; //register the full sample
     end
 
-    wire dont_care;
-    wire [5:0] dont_care2;
+    localparam FIR_COEFF_WIDTH = 24;
+    localparam FIR_OUTPUT_WIDTH = DATA_WIDTH + FIR_COEFF_WIDTH + 4;
+    localparam FIR_FRAC_BITS = 23;
     wire signed [359:0] buff_array;
     wire signed [359:0] coeffs;
-    wire [23:0] y_n;
+    wire signed [FIR_OUTPUT_WIDTH-1:0] fir_m_data;
+    wire [5:0] fir_m_keep;
+    wire fir_m_valid;
+    wire fir_m_ready;
+    wire fir_m_last;
+    wire fir_s_ready;
+    function automatic signed [DATA_WIDTH-1:0] sat_fir;
+        input signed [FIR_OUTPUT_WIDTH-1:0] x;
+        reg signed [FIR_OUTPUT_WIDTH-1:0] max_ext;
+        reg signed [FIR_OUTPUT_WIDTH-1:0] min_ext;
+    begin
+        max_ext = {{(FIR_OUTPUT_WIDTH-DATA_WIDTH){1'b0}}, {1'b0, {(DATA_WIDTH-1){1'b1}}}};
+        min_ext = {{(FIR_OUTPUT_WIDTH-DATA_WIDTH){1'b1}}, {1'b1, {(DATA_WIDTH-1){1'b0}}}};
+        if (x > max_ext)
+            sat_fir = max_ext[DATA_WIDTH-1:0];
+        else if (x < min_ext)
+            sat_fir = min_ext[DATA_WIDTH-1:0];
+        else
+            sat_fir = x[DATA_WIDTH-1:0];
+    end
+    endfunction
+
+    localparam signed [FIR_OUTPUT_WIDTH-1:0] FIR_ROUND =
+        ({{(FIR_OUTPUT_WIDTH-1){1'b0}}, 1'b1} <<< (FIR_FRAC_BITS-1));
+    wire signed [FIR_OUTPUT_WIDTH-1:0] fir_round =
+        fir_m_data + (fir_m_data[FIR_OUTPUT_WIDTH-1] ? -FIR_ROUND : FIR_ROUND);
+    wire signed [FIR_OUTPUT_WIDTH-1:0] fir_shift = fir_round >>> FIR_FRAC_BITS;
+    wire signed [DATA_WIDTH-1:0] fir_sample = sat_fir(fir_shift);
+    wire s_select = fir_m_last;
+    wire s_new_word = (fir_m_valid == 1'b1 && fir_m_ready == 1'b1) ? 1'b1 : 1'b0;
+    wire s_new_packet = (s_new_word == 1'b1 && fir_m_last == 1'b1) ? 1'b1 : 1'b0;
 
     /************ FIR, LMS INTEGRATION ************/
-    FIR fir (.clk(clk),
-            .reset_n(reset_n),
-            .s_axis_fir_tdata(axis_rmem_data),
-            .s_axis_fir_tkeep(6'b111111), // all bytes are valid since we're using 24-bit samples
-            .s_axis_fir_tlast(1'b0),
-            .m_axis_fir_tdata(y_n),
-            .m_axis_fir_tkeep(dont_care2),
-            .m_axis_fir_tlast(dont_care),
-            .buff_array(buff_array),
-            .coeffs(coeffs)
+    FIR #(
+        .INPUT_WIDTH(DATA_WIDTH),
+        .COEFF_WIDTH(FIR_COEFF_WIDTH)
+    ) fir (
+        .clk(clk),
+        .reset_n(reset_n),
+        .s_axis_fir_tdata(s_axis_data),
+        .s_axis_fir_tkeep(6'b111111), // all bytes are valid since we're using 24-bit samples
+        .s_axis_fir_tlast(s_axis_last),
+        .s_axis_fir_tvalid(s_axis_valid && s_axis_ready_int),
+        .s_axis_fir_tready(fir_s_ready),
+        .m_axis_fir_tdata(fir_m_data),
+        .m_axis_fir_tkeep(fir_m_keep),
+        .m_axis_fir_tlast(fir_m_last),
+        .m_axis_fir_tvalid(fir_m_valid),
+        .m_axis_fir_tready(fir_m_ready),
+        .buff_array(buff_array),
+        .coeffs(coeffs)
     );
 
     LMS lms (
@@ -118,6 +155,9 @@ module axis_volume_controller #(
         .err(axis_lmem_data), // use left mic as error signal for testing
         .wn_u(coeffs)
      );
+
+    assign s_axis_ready = s_axis_ready_int && fir_s_ready;
+    assign fir_m_ready = s_axis_ready_int;
 
 
     reg [SWITCH_WIDTH-1:0] vol;
@@ -141,13 +181,8 @@ module axis_volume_controller #(
     end
     
     always@(posedge clk)
-        if (s_new_word == 1'b1) // sign extend and register AXIS slave data
-            if (sw_sync == 4'b0001)
-                data[s_select] <= {{MULTIPLIER_WIDTH{axis_lmem_data[DATA_WIDTH-1]}}, axis_lmem_data}; //to test the mic input
-            else 
-                data[s_select] <= {{MULTIPLIER_WIDTH{y_n[DATA_WIDTH-1]}}, y_n}; //to test the mic input
-                //data[s_select] <= {{MULTIPLIER_WIDTH{axis_rmem_data[DATA_WIDTH-1]}}, axis_rmem_data}; //to test the mic input
-                //data[s_select] <= {{MULTIPLIER_WIDTH{s_axis_data[DATA_WIDTH-1]}}, s_axis_data}; //to test the AXIS input
+        if (s_new_word == 1'b1) // sign extend and register FIR output
+            data[s_select] <= {{MULTIPLIER_WIDTH{fir_sample[DATA_WIDTH-1]}}, fir_sample};
         else if (s_new_packet_r == 1'b1) begin
             data[0] <= $signed(data[0]) * multiplier;
             data[1] <= $signed(data[1]) * multiplier;
@@ -173,7 +208,7 @@ module axis_volume_controller #(
             
     always@(posedge clk)
         if (s_new_packet == 1'b1)
-            s_axis_ready <= 1'b0;
+            s_axis_ready_int <= 1'b0;
         else if (m_new_packet == 1'b1)
-            s_axis_ready <= 1'b1;
+            s_axis_ready_int <= 1'b1;
 endmodule

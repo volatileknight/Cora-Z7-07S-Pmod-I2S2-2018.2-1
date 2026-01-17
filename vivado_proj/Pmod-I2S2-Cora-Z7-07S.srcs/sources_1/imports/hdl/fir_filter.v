@@ -20,7 +20,7 @@ module FIR
     input wire s_axis_fir_tvalid,
     input wire m_axis_fir_tready,
     output reg m_axis_fir_tvalid,
-    output reg s_axis_fir_tready,
+    output wire s_axis_fir_tready,
     output reg m_axis_fir_tlast,
     output reg [5:0] m_axis_fir_tkeep,
     output reg signed [OUTPUT_WIDTH-1:0] m_axis_fir_tdata,
@@ -48,45 +48,14 @@ module FIR
     wire signed [COEFF_WIDTH-1:0] tap13 = coeffs[13*COEFF_WIDTH +: COEFF_WIDTH];
     wire signed [COEFF_WIDTH-1:0] tap14 = coeffs[14*COEFF_WIDTH +: COEFF_WIDTH];
 
-    // Circular buffer logic
-    reg enable_fir, enable_buff;
-    reg [3:0] buff_cnt;
-    reg signed [INPUT_WIDTH-1:0] in_sample;
-
-    always @(posedge clk or negedge reset_n) begin
-        if (~reset_n) begin
-            buff_cnt   <= 0;
-            enable_fir <= 0;
-            in_sample  <= 0;
-        end else if (~m_axis_fir_tready || ~s_axis_fir_tvalid) begin
-            enable_fir <= 0;
-            buff_cnt   <= NUM_TAPS-1;
-        end else if (buff_cnt == NUM_TAPS-1) begin
-            buff_cnt   <= 0;
-            enable_fir <= 1;
-            in_sample  <= s_axis_fir_tdata;
-        end else begin
-            buff_cnt   <= buff_cnt + 1;
-            in_sample  <= s_axis_fir_tdata;
-        end
-    end
-
-    always @(posedge clk or negedge reset_n) begin
-        if (~reset_n) begin
-            s_axis_fir_tready <= 0;
-            m_axis_fir_tvalid <= 0;
-            enable_buff       <= 0;
-        end else begin
-            s_axis_fir_tready <= 1;
-            m_axis_fir_tvalid <= 1;
-            enable_buff       <= 1;
-        end
-    end
+    // Handshake for a single-stage output buffer (1-cycle latency).
+    wire in_fire = s_axis_fir_tvalid && s_axis_fir_tready;
+    assign s_axis_fir_tready = ~m_axis_fir_tvalid || m_axis_fir_tready;
 
     // Circular buffer shift
     always @(posedge clk) begin
-        if (enable_buff) begin
-            buff0  <= in_sample;
+        if (in_fire) begin
+            buff0  <= s_axis_fir_tdata;
             buff1  <= buff0;
             buff2  <= buff1;
             buff3  <= buff2;
@@ -115,7 +84,7 @@ module FIR
                                 acc8, acc9, acc10, acc11, acc12, acc13, acc14;
 
     always @(posedge clk) begin
-        if (enable_fir) begin
+        if (in_fire) begin
             acc0  <= tap0  * buff0;
             acc1  <= tap1  * buff1;
             acc2  <= tap2  * buff2;
@@ -134,17 +103,42 @@ module FIR
         end
     end
 
-    // Accumulate stage
-    always @(posedge clk) begin
-        if (enable_fir)
-            m_axis_fir_tdata <= acc0 + acc1 + acc2 + acc3 + acc4 + acc5 + acc6 + acc7 +
-                                acc8 + acc9 + acc10 + acc11 + acc12 + acc13 + acc14;
+    wire signed [OUTPUT_WIDTH-1:0] acc_sum = acc0 + acc1 + acc2 + acc3 + acc4 + acc5 + acc6 + acc7 +
+                                             acc8 + acc9 + acc10 + acc11 + acc12 + acc13 + acc14;
+
+    reg fire_d = 1'b0;
+    reg [5:0] tkeep_d = 6'b0;
+    reg tlast_d = 1'b0;
+
+    always @(posedge clk or negedge reset_n) begin
+        if (~reset_n) begin
+            fire_d  <= 1'b0;
+            tkeep_d <= 6'b0;
+            tlast_d <= 1'b0;
+        end else begin
+            fire_d <= in_fire;
+            if (in_fire) begin
+                tkeep_d <= s_axis_fir_tkeep;
+                tlast_d <= s_axis_fir_tlast;
+            end
+        end
     end
 
-    // Pass through AXIS signals
-    always @(posedge clk) begin
-        m_axis_fir_tkeep <= s_axis_fir_tkeep;
-        m_axis_fir_tlast <= s_axis_fir_tlast;
+    // Output stage (aligned with acc_sum from previous cycle)
+    always @(posedge clk or negedge reset_n) begin
+        if (~reset_n) begin
+            m_axis_fir_tvalid <= 1'b0;
+            m_axis_fir_tdata  <= {OUTPUT_WIDTH{1'b0}};
+            m_axis_fir_tkeep  <= 6'b0;
+            m_axis_fir_tlast  <= 1'b0;
+        end else if (fire_d) begin
+            m_axis_fir_tvalid <= 1'b1;
+            m_axis_fir_tdata  <= acc_sum;
+            m_axis_fir_tkeep  <= tkeep_d;
+            m_axis_fir_tlast  <= tlast_d;
+        end else if (m_axis_fir_tvalid && m_axis_fir_tready) begin
+            m_axis_fir_tvalid <= 1'b0;
+        end
     end
 
 endmodule

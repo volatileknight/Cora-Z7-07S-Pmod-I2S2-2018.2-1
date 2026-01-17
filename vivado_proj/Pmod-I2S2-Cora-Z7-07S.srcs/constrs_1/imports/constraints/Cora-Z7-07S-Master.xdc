@@ -90,7 +90,7 @@ set_property -dict { PACKAGE_PIN V13   IOSTANDARD LVCMOS33 } [get_ports { lmem_d
 set_property -dict { PACKAGE_PIN T14   IOSTANDARD LVCMOS33 } [get_ports { lmem_bclk }]; #IO_L5P_T0_34 Sch=ck_io[2]
 set_property -dict { PACKAGE_PIN T15   IOSTANDARD LVCMOS33 } [get_ports { rmem_data }]; #IO_L5N_T0_34 Sch=ck_io[3]
 #set_property -dict { PACKAGE_PIN V17   IOSTANDARD LVCMOS33 } [get_ports { axis_rx_data }]; #IO_L21P_T3_DQS_34 Sch=ck_io[4]
-#set_property -dict { PACKAGE_PIN V18   IOSTANDARD LVCMOS33 } [get_ports { tx_data }]; #IO_L21N_T3_DQS_34 Sch=ck_io[5]
+#set_property -dict { PACKAGE_PIN V18   IOSTANDARD LVCMOS33 } [get_ports { reset }]; #IO_L21N_T3_DQS_34 Sch=ck_io[5]
 #set_property -dict { PACKAGE_PIN R17   IOSTANDARD LVCMOS33 } [get_ports { ck_io6 }]; #IO_L19N_T3_VREF_34 Sch=ck_io[6]
 #set_property -dict { PACKAGE_PIN R14   IOSTANDARD LVCMOS33 } [get_ports { ck_io7 }]; #IO_L6N_T0_VREF_34 Sch=ck_io[7]
 #set_property -dict { PACKAGE_PIN N18   IOSTANDARD LVCMOS33 } [get_ports { ck_io8 }]; #IO_L13P_T2_MRCC_34 Sch=ck_io[8]

@@ -1,28 +1,12 @@
 `timescale 1ns / 1ps
 `default_nettype none
-//////////////////////////////////////////////////////////////////////////////////
-// Company: Digilent
-// Engineer: Arthur Brown
-// 
-// Create Date: 03/23/2018 01:23:15 PM
-// Module Name: axis_volume_controller
-// Description: AXI-Stream volume controller intended for use with AXI Stream Pmod I2S2 controller.
-//              Whenever a 2-word packet is received on the slave interface, it is multiplied by 
-//              the value of the switches, taken to represent the range 0.0:1.0, then sent over the
-//              master interface. Reception of data on the slave interface is halted while processing and
-//              transfer is taking place.
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
 module axis_volume_controller #(
-    parameter SWITCH_WIDTH = 4, // WARNING: this module has not been tested with other values of SWITCH_WIDTH, it will likely need some changes
+    parameter SWITCH_WIDTH = 4,
     parameter DATA_WIDTH = 24
 ) (
     input wire clk,
+    input wire lrclk,
     input wire reset_n,
     input wire [SWITCH_WIDTH-1:0] sw,
     
@@ -49,8 +33,7 @@ module axis_volume_controller #(
         
     reg [SWITCH_WIDTH-1:0] sw_sync_r [2:0];
     wire [SWITCH_WIDTH-1:0] sw_sync = sw_sync_r[2];
-//    wire [SWITCH_WIDTH:0] m = {1'b0, sw_sync} + 1;
-    reg [MULTIPLIER_WIDTH:0] multiplier = 'b0; // range of 0x00:0x10 for width=4
+    reg [MULTIPLIER_WIDTH:0] multiplier = 'b0;
     
     wire m_select = m_axis_last;
     wire m_new_word = (m_axis_valid == 1'b1 && m_axis_ready == 1'b1) ? 1'b1 : 1'b0;
@@ -61,67 +44,123 @@ module axis_volume_controller #(
     wire s_new_packet = (s_new_word == 1'b1 && s_axis_last == 1'b1) ? 1'b1 : 1'b0;
     reg s_new_packet_r = 1'b0;
 
-
     /************ MEM INPUT PROCESSING ************/
-    //mem_lrclk falls, then on the posedge of mem_bclk, lmem_data is valid
-    reg [23:0] shift_lmem_data = 24'd0; //shift lmem_data into this
-    reg [23:0] axis_lmem_data = 24'd0; //register shift_lmem_data into this
-    reg [23:0] shift_rmem_data = 24'd0; //shift lmem_data into this
-    reg [23:0] axis_rmem_data = 24'd0; //register shift_rmem_data into this
-    // counts from 0 to 63 for each sample, then resets on the next lrclk falling edge
-    reg [6:0] lmem_data_count = 7'd0; 
+    reg [23:0] shift_lmem_data = 24'd0;
+    reg [23:0] axis_lmem_data = 24'd0;
+    reg [23:0] shift_rmem_data = 24'd0;
+    reg [23:0] axis_rmem_data = 24'd0;
+    reg [6:0] lmem_data_count = 7'd0;
     reg old_lmem_lrclk = 1'b0;
     
     always@(posedge lmem_bclk)
         old_lmem_lrclk <= lmem_lrclk;
 
-    always@(posedge lmem_bclk) begin //this happens slightly after negedge lrclk
-        if (old_lmem_lrclk == 1'b1 && lmem_lrclk == 1'b0) //detect lrclk falling edge
-            lmem_data_count <= 1'b0; //reset count on lrclk falling edge
+    always@(posedge lmem_bclk) begin
+        if (old_lmem_lrclk == 1'b1 && lmem_lrclk == 1'b0)
+            lmem_data_count <= 1'b0;
         else
-            lmem_data_count <= lmem_data_count + 1'b1; //increment count
+            lmem_data_count <= lmem_data_count + 1'b1;
 
         if (lmem_data_count < 7'd24)
             shift_lmem_data <= (shift_lmem_data << 1) | lmem_data;
         else if (lmem_data_count == 7'd24)
-            axis_lmem_data <= shift_lmem_data; //register the full sample
+            axis_lmem_data <= shift_lmem_data;
 
         if (lmem_data_count < 7'd24)
             shift_rmem_data <= (shift_rmem_data << 1) | rmem_data;
         else if (lmem_data_count == 7'd24)
-            axis_rmem_data <= shift_rmem_data; //register the full sample
+            axis_rmem_data <= shift_rmem_data;
     end
 
-    wire dont_care;
-    wire [5:0] dont_care2;
-    wire signed [359:0] buff_array;
-    wire signed [359:0] coeffs;
-    wire [23:0] y_n;
+    /************ FIR INPUT GENERATION (lrclk domain) ************/
+    reg fir_input_valid = 1'b0;
+    reg old_lmem_lrclk_clk = 1'b0;
+    reg [1:0] lmem_lrclk_sync = 2'b0;
+    
+    // Synchronize lmem_lrclk to lrclk domain
+    always@(posedge lrclk) begin
+        lmem_lrclk_sync <= {lmem_lrclk_sync[0], lmem_lrclk};
+        old_lmem_lrclk_clk <= lmem_lrclk_sync[1];
+        
+        // Generate valid pulse on falling edge of lmem_lrclk (new sample ready)
+        if (old_lmem_lrclk_clk == 1'b1 && lmem_lrclk_sync[1] == 1'b0)
+            fir_input_valid <= 1'b1;
+        else if (fir_output_ready)
+            fir_input_valid <= 1'b0;
+    end
 
     /************ FIR, LMS INTEGRATION ************/
-    FIR fir (.clk(clk),
-            .reset_n(reset_n),
-            .s_axis_fir_tdata(axis_rmem_data),
-            .s_axis_fir_tkeep(6'b111111), // all bytes are valid since we're using 24-bit samples
-            .s_axis_fir_tlast(1'b0),
-            .m_axis_fir_tdata(y_n),
-            .m_axis_fir_tkeep(dont_care2),
-            .m_axis_fir_tlast(dont_care),
-            .buff_array(buff_array),
-            .coeffs(coeffs)
+    wire signed [359:0] buff_array;
+    wire signed [359:0] coeffs;
+    wire [23:0] fir_output;
+    wire fir_output_valid;
+    reg fir_output_ready = 1'b0;
+
+    FIR fir (
+        .clk(lrclk),
+        .reset_n(reset_n),
+        .s_axis_fir_tdata(axis_rmem_data),
+        .s_axis_fir_tkeep(6'b111111),
+        .s_axis_fir_tlast(1'b0),
+        .s_axis_fir_tvalid(fir_input_valid),
+        .m_axis_fir_tready(fir_output_ready),
+        .m_axis_fir_tdata(fir_output),
+        .m_axis_fir_tvalid(fir_output_valid),
+        .buff_array(buff_array),
+        .coeffs(coeffs)
     );
 
     LMS lms (
-        .clk(clk),
+        .clk(lrclk),
         .reset_n(reset_n),
         .buff_array(buff_array),
-        .err(axis_lmem_data), // use left mic as error signal for testing
+        .err(axis_lmem_data),
         .wn_u(coeffs)
-     );
+    );
 
+    /************ CLOCK DOMAIN CROSSING (lrclk -> clk) ************/
+    reg [23:0] fir_output_sync [2:0];
+    reg fir_valid_sync [2:0];
+    reg fir_valid_pulse = 1'b0;
+    reg fir_valid_prev = 1'b0;
+    
+    // Multi-stage synchronizer for data
+    always@(posedge clk) begin
+        fir_output_sync[0] <= fir_output;
+        fir_output_sync[1] <= fir_output_sync[0];
+        fir_output_sync[2] <= fir_output_sync[1];
+        
+        fir_valid_sync[0] <= fir_output_valid;
+        fir_valid_sync[1] <= fir_valid_sync[0];
+        fir_valid_sync[2] <= fir_valid_sync[1];
+        
+        fir_valid_prev <= fir_valid_sync[2];
+        fir_valid_pulse <= fir_valid_sync[2] & ~fir_valid_prev; // edge detect
+    end
 
+    wire [23:0] fir_output_amp;
+    assign fir_output_amp = fir_output_sync[2] <<< 2; //+12dB scaling
+    
+    // Acknowledge in lrclk domain
+    reg ready_toggle = 1'b0;
+    reg [2:0] ready_sync = 3'b0;
+    reg ready_prev = 1'b0;
+    
+    always@(posedge clk) begin
+        if (fir_valid_pulse)
+            ready_toggle <= ~ready_toggle;
+    end
+    
+    always@(posedge lrclk) begin
+        ready_sync <= {ready_sync[1:0], ready_toggle};
+        ready_prev <= ready_sync[2];
+        fir_output_ready <= (ready_sync[2] != ready_prev);
+    end
+
+    /************ VOLUME CONTROL ************/
     reg [SWITCH_WIDTH-1:0] vol;
-
+    wire [23:0] comb_mem_data = axis_lmem_data + axis_rmem_data;
+    
     always@(posedge clk)
         vol <= 4'b0001;
     
@@ -130,50 +169,47 @@ module axis_volume_controller #(
         sw_sync_r[1] <= sw_sync_r[0];
         sw_sync_r[0] <= sw; 
         
-        
-//        if (&sw_sync == 1'b1)
-//            multiplier <= {1'b1, {MULTIPLIER_WIDTH{1'b0}}};
-//        else
-            // multiplier <= {1'b0, sw, {MULTIPLIER_WIDTH-SWITCH_WIDTH{1'b0}}} + 1;
-            multiplier <= {vol,{MULTIPLIER_WIDTH{1'b0}}} / {SWITCH_WIDTH{1'b1}};
-            
+        multiplier <= {vol,{MULTIPLIER_WIDTH{1'b0}}} / {SWITCH_WIDTH{1'b1}};
         s_new_packet_r <= s_new_packet;
     end
     
-    always@(posedge clk)
-        if (s_new_word == 1'b1) // sign extend and register AXIS slave data
+    always@(posedge clk) begin
+        if (s_new_word == 1'b1) begin
             if (sw_sync == 4'b0001)
-                data[s_select] <= {{MULTIPLIER_WIDTH{axis_lmem_data[DATA_WIDTH-1]}}, axis_lmem_data}; //to test the mic input
-            else 
-                data[s_select] <= {{MULTIPLIER_WIDTH{y_n[DATA_WIDTH-1]}}, y_n}; //to test the mic input
-                //data[s_select] <= {{MULTIPLIER_WIDTH{axis_rmem_data[DATA_WIDTH-1]}}, axis_rmem_data}; //to test the mic input
-                //data[s_select] <= {{MULTIPLIER_WIDTH{s_axis_data[DATA_WIDTH-1]}}, s_axis_data}; //to test the AXIS input
-        else if (s_new_packet_r == 1'b1) begin
+                data[s_select] <= {{MULTIPLIER_WIDTH{s_axis_data[DATA_WIDTH-1]}}, s_axis_data};
+            else
+                data[s_select] <= {{MULTIPLIER_WIDTH{fir_output_amp[2][DATA_WIDTH-1]}}, fir_output_amp[2]};
+        end else if (s_new_packet_r == 1'b1) begin
             data[0] <= $signed(data[0]) * multiplier;
             data[1] <= $signed(data[1]) * multiplier;
         end
+    end
         
-    always@(posedge clk)
+    always@(posedge clk) begin
         if (s_new_packet_r == 1'b1)
             m_axis_valid <= 1'b1;
         else if (m_new_packet == 1'b1)
             m_axis_valid <= 1'b0;
+    end
             
-    always@(posedge clk)
+    always@(posedge clk) begin
         if (m_new_packet == 1'b1)
             m_axis_last <= 1'b0;
         else if (m_new_word == 1'b1)
             m_axis_last <= 1'b1;
+    end
             
-    always@(m_axis_valid, data[0], data[1], m_select)
+    always@(*) begin
         if (m_axis_valid == 1'b1)
             m_axis_data = data[m_select][MULTIPLIER_WIDTH+DATA_WIDTH-1:MULTIPLIER_WIDTH];
         else
             m_axis_data = 'b0;
+    end
             
-    always@(posedge clk)
+    always@(posedge clk) begin
         if (s_new_packet == 1'b1)
             s_axis_ready <= 1'b0;
         else if (m_new_packet == 1'b1)
             s_axis_ready <= 1'b1;
+    end
 endmodule

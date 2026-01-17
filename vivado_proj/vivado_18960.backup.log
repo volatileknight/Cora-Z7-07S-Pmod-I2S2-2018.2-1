@@ -3,10 +3,10 @@
 # SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
 # IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
 # SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
-# Start of session at: Fri Jan 16 19:01:02 2026
-# Process ID         : 30136
+# Start of session at: Fri Jan 16 18:18:29 2026
+# Process ID         : 18960
 # Current directory  : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj
-# Command line       : vivado.exe -gui_launcher_event rodinguilauncherevent11708 C:\Users\wands\Documents\Build18\Cora-Z7-07S-Pmod-I2S2-2018.2-1\vivado_proj\Pmod-I2S2-Cora-Z7-07S.xpr
+# Command line       : vivado.exe -gui_launcher_event rodinguilauncherevent12340 C:\Users\wands\Documents\Build18\Cora-Z7-07S-Pmod-I2S2-2018.2-1\vivado_proj\Pmod-I2S2-Cora-Z7-07S.xpr
 # Log file           : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/vivado.log
 # Journal file       : C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj\vivado.jou
 # Running On         : volatile_knight
@@ -19,11 +19,9 @@
 # Host memory        : 16876 MB
 # Swap memory        : 4026 MB
 # Total Virtual      : 20903 MB
-# Available Virtual  : 3570 MB
+# Available Virtual  : 2965 MB
 #-----------------------------------------------------------
-start_gui
-open_project C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.xpr
-WARNING: [Board 49-26] cannot add Board Part xilinx.com:ac701:part0:1.4 available at C:/AMDDesignTools/2025.2/data/xhub/boards\XilinxBoardStore\boards\Xilinx\ac701\1.4\board.xml as part xc7a200tfbg676-2 specified in board_part file is either invalid or not available
+start_guioopen_project C:/Users/wands/Documents/Build18/Cora-Z7-07S-Pmod-I2S2-2018.2-1/vivado_proj/Pmod-I2S2-Cora-Z7-07S.xprWARNING: [Board 49-26] cannot add Board Part xilinx.com:ac701:part0:1.4 available at C:/AMDDesignTools/2025.2/data/xhub/boards\XilinxBoardStore\boards\Xilinx\ac701\1.4\board.xml as part xc7a200tfbg676-2 specified in board_part file is either invalid or not available
 WARNING: [Board 49-26] cannot add Board Part xilinx.com:emb-plus-vpr-4616:part0:1.0 available at C:/AMDDesignTools/2025.2/data/xhub/boards\XilinxBoardStore\boards\Xilinx\emb-plus-vpr-4616\1.0\board.xml as part xcve2302-sfva784-2mp-e-s specified in board_part file is either invalid or not available
 WARNING: [Board 49-26] cannot add Board Part xilinx.com:emb-plus-vpr-4616:part0:1.1 available at C:/AMDDesignTools/2025.2/data/xhub/boards\XilinxBoardStore\boards\Xilinx\emb-plus-vpr-4616\1.1\board.xml as part xcve2302-sfva784-2mp-e-s specified in board_part file is either invalid or not available
 WARNING: [Board 49-26] cannot add Board Part xilinx.com:k24c:part0:1.0 available at C:/AMDDesignTools/2025.2/data/xhub/boards\XilinxBoardStore\boards\Xilinx\k24c\1.0\board.xml as part xck24-ubva530-2lv-c specified in board_part file is either invalid or not available
@@ -132,6 +130,7 @@ INFO: [IP_Flow 19-234] Refreshing IP repositories
 WARNING: [IP_Flow 19-2248] Failed to load user IP repository 'c:/Users/wands/repo'; Can't find the specified path.
 If this directory should no longer be in your list of user repositories, go to the IP Settings dialog and remove it.
 INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/AMDDesignTools/2025.2/Vivado/data/ip'.
-WARNING: [IP_Flow 19-2162] IP 'clk_wiz_0' is locked:
-* IP definition 'Clocking Wizard (6.0)' for IP 'clk_wiz_0' (customized with software release 2018.2) has a different revision in the IP Catalog.
-open_project: Time (s): cpu = 00:00:55 ; elapsed = 00:00:23 . Memory (MB): peak = 1663.602 ; gain = 220.117
+WWARNING: [IP_Flow 19-2162] IP 'clk_wiz_0' is locked:
+* IP definition 'Clocking Wizard (6.0)' for IP 'clk_wiz_0' (customized with software release 2018.2) has a different revision in the IP Catalog.oopen_project: Time (s): cpu = 00:01:05 ; elapsed = 00:00:41 . Memory (MB): peak = 1664.887 ; gain = 211.375
+update_compile_order -fileset sources_1eexit
+INFO: [Common 17-206] Exiting Vivado at Fri Jan 16 18:56:41 2026...

@@ -94,6 +94,7 @@ module top #(
 		.DATA_WIDTH(24)
 	) m_vc (
         .clk(axis_clk),
+        .lrclk(tx_lrck),
         .sw(sw),
         .reset_n(~reset),
         .s_axis_data(axis_rx_data),
